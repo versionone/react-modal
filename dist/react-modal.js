@@ -68,7 +68,7 @@ function sanitizeProps(props) {
   delete props.ref;
 }
 
-},{"../helpers/ariaAppHider":3,"../helpers/injectCSS":5,"./ModalPortal":2,"react/lib/ExecutionEnvironment":10}],2:[function(_dereq_,module,exports){
+},{"../helpers/ariaAppHider":3,"../helpers/injectCSS":5,"./ModalPortal":2,"react/lib/ExecutionEnvironment":11}],2:[function(_dereq_,module,exports){
 var React = (typeof window !== "undefined" ? window.React : typeof global !== "undefined" ? global.React : null);
 var div = React.DOM.div;
 var focusManager = _dereq_('../helpers/focusManager');
@@ -89,13 +89,14 @@ var CLASS_NAMES = {
   }
 };
 
-var OVERLAY_STYLES = { position: 'fixed', left: 0, right: 0, top: 0, bottom: 0 };
-
 function stopPropagation(event) {
   event.stopPropagation();
 }
 
 var ModalPortal = module.exports = React.createClass({
+  mixins: [
+    _dereq_('react-onclickoutside')
+  ],
 
   displayName: 'ModalPortal',
 
@@ -186,6 +187,10 @@ var ModalPortal = module.exports = React.createClass({
       this.focusContent();
   },
 
+  handleClickOutside: function() {
+    this.requestClose();
+  },
+
   requestClose: function() {
     if (this.ownerHandlesClose())
       this.props.onRequestClose();
@@ -213,7 +218,6 @@ var ModalPortal = module.exports = React.createClass({
       div({
         ref: "overlay",
         className: cx(this.buildClassName('overlay'), this.props.overlayClassName),
-        style: OVERLAY_STYLES,
         onClick: this.handleOverlayClick
       },
         div({
@@ -231,7 +235,7 @@ var ModalPortal = module.exports = React.createClass({
   }
 });
 
-},{"../helpers/focusManager":4,"../helpers/scopeTab":6,"classnames":9}],3:[function(_dereq_,module,exports){
+},{"../helpers/focusManager":4,"../helpers/scopeTab":6,"classnames":9,"react-onclickoutside":10}],3:[function(_dereq_,module,exports){
 var _element = null;
 
 function setElement(element) {
@@ -505,7 +509,115 @@ if (typeof define !== 'undefined' && define.amd) {
 
 },{}],10:[function(_dereq_,module,exports){
 /**
- * Copyright 2013-2014, Facebook, Inc.
+ * A mixin for handling (effectively) onClickOutside for React components.
+ * Note that we're not intercepting any events in this approach, and we're
+ * not using double events for capturing and discarding in layers or wrappers.
+ *
+ * The idea is that components define function
+ *
+ *   handleClickOutside: function() { ... }
+ *
+ * If no such function is defined, an error will be thrown, as this means
+ * either it still needs to be written, or the component should not be using
+ * this mixing since it will not exhibit onClickOutside behaviour.
+ *
+ */
+(function (root, factory) {
+  if (typeof define === 'function' && define.amd) {
+    // AMD. Register as an anonymous module.
+    define([], factory);
+  } else if (typeof exports === 'object') {
+    // Node. Note that this does not work with strict
+    // CommonJS, but only CommonJS-like environments
+    // that support module.exports
+    module.exports = factory();
+  } else {
+    // Browser globals (root is window)
+    root.OnClickOutside = factory();
+  }
+}(this, function () {
+  "use strict";
+
+  // Use a parallel array because we can't use
+  // objects as keys, they get toString-coerced
+  var registeredComponents = [];
+  var handlers = [];
+
+  var IGNORE_CLASS = 'ignore-react-onclickoutside';
+
+  return {
+    componentDidMount: function() {
+      if(!this.handleClickOutside)
+        throw new Error("Component lacks a handleClickOutside(event) function for processing outside click events.");
+
+      var fn = this.__outsideClickHandler = (function(localNode, eventHandler) {
+        return function(evt) {
+          var source = evt.target;
+          var found = false;
+          // If source=local then this event came from "somewhere"
+          // inside and should be ignored. We could handle this with
+          // a layered approach, too, but that requires going back to
+          // thinking in terms of Dom node nesting, running counter
+          // to React's "you shouldn't care about the DOM" philosophy.
+          while(source.parentNode) {
+            found = (source === localNode || source.classList.contains(IGNORE_CLASS));
+            if(found) return;
+            source = source.parentNode;
+          }
+          eventHandler(evt);
+        }
+      }(this.getDOMNode(), this.handleClickOutside));
+
+      var pos = registeredComponents.length;
+      registeredComponents.push(this);
+      handlers[pos] = fn;
+
+      // If there is a truthy disableOnClickOutside property for this
+      // component, don't immediately start listening for outside events.
+      if (!this.props.disableOnClickOutside) {
+        this.enableOnClickOutside();
+      }
+    },
+
+    componentWillUnmount: function() {
+      this.disableOnClickOutside();
+      this.__outsideClickHandler = false;
+      var pos = registeredComponents.indexOf(this);
+      if( pos>-1) {
+        if (handlers[pos]) {
+          // clean up so we don't leak memory
+          handlers.splice(pos, 1);
+          registeredComponents.splice(pos, 1);
+        }
+      }
+    },
+
+    /**
+     * Can be called to explicitly enable event listening
+     * for clicks and touches outside of this element.
+     */
+    enableOnClickOutside: function() {
+      var fn = this.__outsideClickHandler;
+      document.addEventListener("mousedown", fn);
+      document.addEventListener("touchstart", fn);
+    },
+
+    /**
+     * Can be called to explicitly disable event listening
+     * for clicks and touches outside of this element.
+     */
+    disableOnClickOutside: function(fn) {
+      var fn = this.__outsideClickHandler;
+      document.removeEventListener("mousedown", fn);
+      document.removeEventListener("touchstart", fn);
+    }
+  };
+
+}));
+
+},{}],11:[function(_dereq_,module,exports){
+/**
+ * Copyright 2013-2015, Facebook, Inc.
  * All rights reserved.
  *
  * This source code is licensed under the BSD-style license found in the
@@ -520,9 +632,8 @@ if (typeof define !== 'undefined' && define.amd) {
 "use strict";
 
 var canUseDOM = !!(
-  typeof window !== 'undefined' &&
-  window.document &&
-  window.document.createElement
+  (typeof window !== 'undefined' &&
+  window.document && window.document.createElement)
 );
 
 /**
