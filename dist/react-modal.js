@@ -229,7 +229,7 @@ return /******/ (function(modules) { // webpackBootstrap
 		}
 
 	}());
-
+},{"../helpers/ariaAppHider":3,"../helpers/injectCSS":5,"./ModalPortal":2,"react/lib/ExecutionEnvironment":10}],2:[function(_dereq_,module,exports){
 
 /***/ },
 /* 5 */
@@ -258,6 +258,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 	var ModalPortal = module.exports = React.createClass({
+  mixins: [
+    _dereq_('react-onclickoutside')
+  ],
 
 	  displayName: 'ModalPortal',
 
@@ -370,6 +373,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	  },
 
+  handleClickOutside: function() {
+    this.requestClose();
+  },
+
 	  requestClose: function requestClose(event) {
 	    if (this.ownerHandlesClose()) this.props.onRequestClose(event);
 	  },
@@ -396,7 +403,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return this.shouldBeClosed() ? div() : div({
 	      ref: "overlay",
 	      className: this.buildClassName('overlay', this.props.overlayClassName),
-	      style: Assign({}, overlayStyles, this.props.style.overlay || {}),
+        style: OVERLAY_STYLES,
 	      onClick: this.handleOverlayClick
 	    }, div({
 	      ref: "content",
@@ -408,6 +415,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	});
 
+},{"../helpers/focusManager":4,"../helpers/scopeTab":6,"classnames":9}],3:[function(_dereq_,module,exports){
 /***/ },
 /* 6 */
 /***/ function(module, exports, __webpack_require__) {
@@ -1101,14 +1109,113 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports) {
 
 	/**
+ * A mixin for handling (effectively) onClickOutside for React components.
+ * Note that we're not intercepting any events in this approach, and we're
+ * not using double events for capturing and discarding in layers or wrappers.
+ *
+ * The idea is that components define function
+ *
+ *   handleClickOutside: function() { ... }
+ *
+ * If no such function is defined, an error will be thrown, as this means
+ * either it still needs to be written, or the component should not be using
+ * this mixing since it will not exhibit onClickOutside behaviour.
+ *
+ */
+(function (root, factory) {
+  if (typeof define === 'function' && define.amd) {
+    // AMD. Register as an anonymous module.
+    define([], factory);
+  } else if (typeof exports === 'object') {
+    // Node. Note that this does not work with strict
+    // CommonJS, but only CommonJS-like environments
+    // that support module.exports
+    module.exports = factory();
+  } else {
+    // Browser globals (root is window)
+    root.OnClickOutside = factory();
+  }
+}(this, function () {
+  "use strict";
 	 * lodash 3.0.8 (Custom Build) <https://lodash.com/>
+  // Use a parallel array because we can't use
+  // objects as keys, they get toString-coerced
+  var registeredComponents = [];
+  var handlers = [];
 	 * Build: `lodash modularize exports="npm" -o ./`
+  var IGNORE_CLASS = 'ignore-react-onclickoutside';
 	 * Copyright 2012-2016 The Dojo Foundation <http://dojofoundation.org/>
+  return {
+    componentDidMount: function() {
+      if(!this.handleClickOutside)
+        throw new Error("Component lacks a handleClickOutside(event) function for processing outside click events.");
 	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2016 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
+      var fn = this.__outsideClickHandler = (function(localNode, eventHandler) {
+        return function(evt) {
+          var source = evt.target;
+          var found = false;
+          // If source=local then this event came from "somewhere"
+          // inside and should be ignored. We could handle this with
+          // a layered approach, too, but that requires going back to
+          // thinking in terms of Dom node nesting, running counter
+          // to React's "you shouldn't care about the DOM" philosophy.
+          while(source.parentNode) {
+            found = (source === localNode || source.classList.contains(IGNORE_CLASS));
+            if(found) return;
+            source = source.parentNode;
+          }
+          eventHandler(evt);
+        }
+      }(this.getDOMNode(), this.handleClickOutside));
 
+      var pos = registeredComponents.length;
+      registeredComponents.push(this);
+      handlers[pos] = fn;
+
+      // If there is a truthy disableOnClickOutside property for this
+      if (!this.props.disableOnClickOutside) {
+        this.enableOnClickOutside();
+      }
+    },
+
+    componentWillUnmount: function() {
+      this.disableOnClickOutside();
+      this.__outsideClickHandler = false;
+      var pos = registeredComponents.indexOf(this);
+      if( pos>-1) {
+        if (handlers[pos]) {
+          // clean up so we don't leak memory
+          handlers.splice(pos, 1);
+          registeredComponents.splice(pos, 1);
+        }
+      }
+    },
+
+    /**
+     * Can be called to explicitly enable event listening
+	 */
+    enableOnClickOutside: function() {
+      var fn = this.__outsideClickHandler;
+      document.addEventListener("mousedown", fn);
+      document.addEventListener("touchstart", fn);
+    },
+
+    /**
+     * Can be called to explicitly disable event listening
+     * for clicks and touches outside of this element.
+     */
+    disableOnClickOutside: function(fn) {
+      var fn = this.__outsideClickHandler;
+      document.removeEventListener("mousedown", fn);
+      document.removeEventListener("touchstart", fn);
+    }
+  };
+
+}));
+
+},{}],11:[function(_dereq_,module,exports){
+/**
+ * Copyright 2013-2014, Facebook, Inc.
 	/** Used as references for various `Number` constants. */
 	var MAX_SAFE_INTEGER = 9007199254740991;
 
@@ -1361,7 +1468,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/** `Object#toString` result references. */
 	var arrayTag = '[object Array]',
 	    funcTag = '[object Function]';
-
+  typeof window !== 'undefined' &&
 	/** Used to detect host constructors (Safari > 5). */
 	var reIsHostCtor = /^\[object .+?Constructor\]$/;
 
@@ -1375,7 +1482,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	function isObjectLike(value) {
 	  return !!value && typeof value == 'object';
 	}
-
+  window.document.createElement
 	/** Used for native method references. */
 	var objectProto = Object.prototype;
 
