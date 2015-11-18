@@ -41,12 +41,12 @@
     "reactify": "^0.14.0",
     "rf-release": "0.3.1",
     "uglify-js": "2.4.15",
-    "webpack-dev-server": "1.6.5"
-  },
-  "peerDependencies": {
-    "react": ">=0.12.0",
+    "webpack-dev-server": "1.6.5",
     "react-onclickoutside": "0.2.4",
     "classnames": "^1.2.0"
+  },
+  "peerDependencies": {
+    "react": ">=0.12.0"
   },
   "tags": [
     "react",
