@@ -114,32 +114,6 @@ var CLASS_NAMES = {
   }
 };
 
-var defaultStyles = {
-  overlay : {
-    position        : 'fixed',
-    top             : 0,
-    left            : 0,
-    right           : 0,
-    bottom          : 0,
-    backgroundColor : 'rgba(255, 255, 255, 0.75)'
-  },
-  content : {
-    position                : 'absolute',
-    top                     : '40px',
-    left                    : '40px',
-    right                   : '40px',
-    bottom                  : '40px',
-    border                  : '1px solid #ccc',
-    background              : '#fff',
-    overflow                : 'auto',
-    WebkitOverflowScrolling : 'touch',
-    borderRadius            : '4px',
-    outline                 : 'none',
-    padding                 : '20px'
-
-  }
-};
-
 function stopPropagation(event) {
   event.stopPropagation();
 }
@@ -294,9 +268,8 @@ var ModalPortal = module.exports = React.createClass({
     return this.shouldBeClosed() ? div() : (
       div({
         ref: "overlay",
-	//, { 'positioned': this.props.position }, { 'fixed': !this.props.position } ??
-        className: this.buildClassName('overlay', this.props.overlayClassName),
-        style: Assign({}, defaultStyles.overlay, this.props.style.overlay || {}),
+        className: this.buildClassName('overlay', this.props.overlayClassName + ' ' + this.props.position ? 'positioned' : 'fixed'),
+        style: Assign({}, this.props.style.overlay || {}),
         onClick: this.handleOverlayClick
       },
         div({
