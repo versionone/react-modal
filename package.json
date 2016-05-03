@@ -49,6 +49,7 @@
   "dependencies": {
     "element-class": "^0.2.0",
     "exenv": "1.2.0",
+    "jquery": "^2.2.3",
     "lodash.assign": "^3.2.0",
     "react-onclickoutside": "0.2.4"
   },
