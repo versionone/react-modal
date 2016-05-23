@@ -48,7 +48,7 @@
     "webpack-dev-server": "1.6.5"
   },
   "peerDependencies": {
-    "react": ">=0.13.3 || ^0.14.0-beta3"
+    "react": ">=0.13.3 || ^15.0.0"
   },
   "tags": [
     "react",
