@@ -21,13 +21,17 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "react-onclickoutside": "0.2.4",
-    "classnames": "^1.2.0"
+    "classnames": "^1.2.0",
+    "jquery": "^2.2.4",
+    "react-onclickoutside": "^5.1.1",
+    "react-dom": "^15.1.0",
+    "react": "^15.1.0"
   },
   "devDependencies": {
     "browserify": "4.2.3",
     "browserify-shim": "3.6.0",
     "envify": "1.2.0",
+    "exenv": "1.2.0",
     "expect": "0.1.1",
     "jsx-loader": "0.11.2",
     "karma": "0.12.16",
@@ -37,18 +41,12 @@
     "karma-firefox-launcher": "0.1.3",
     "karma-mocha": "0.1.3",
     "mocha": "1.20.1",
-    "exenv": "1.2.0",
-    "react-addons-test-utils": "^0.14.0",
-    "react-dom": "^0.14.0",
-    "react": "^0.14.0",
-    "react-onclickoutside": "0.2.4",
+    "react-addons-test-utils": "15.1.0",
     "reactify": "^0.14.0",
     "rf-release": "0.3.1",
     "uglify-js": "2.4.15",
+    "webpack": "^1.13.1",
     "webpack-dev-server": "1.6.5"
-  },
-  "peerDependencies": {
-    "react": ">=0.13.3 || ^15.0.0"
   },
   "tags": [
     "react",
